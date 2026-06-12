@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kauan & Yanne - 14 Dias de Amor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Plus+Jakarta+Sans:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(circle at center,#2e0817,#120007);color:#fff1f2;overflow-x:hidden}
+        .font-serif{font-family:'Playfair Display',serif}
+        .neon-glow{text-shadow:0 0 10px rgba(225,29,72,0.6),0 0 20px rgba(225,29,72,0.4)}
+        
+        /* ENVELOPE CORRETO - CARTA DENTRO */
+        .envelope-wrapper {
+            position: relative;
+            width: 350px;
+            height: 280px;
+            cursor: pointer;
+            margin: 0 auto;
+        }
+        
+        /* Corpo do envelope (parte de baixo) */
+        .envelope-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 180px;
+            background: #be123c;
+            border-radius: 0 0 12px 12px;
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* Aba do envelope (triângulo de cima) */
+        .envelope-flap {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            width: 100%;
+            height: 0;
+            border-left: 175px solid transparent;
+            border-right: 175px solid transparent;
+            border-top: 90px solid #e11d48;
+            transform-origin: top;
+            transition: transform 0.4s ease;
+            z-index: 30;
+        }
+        
+        @media (max-width: 400px) {
+            .envelope-flap {
+                border-left-width: 150px;
+                border-right-width: 150px;
+                border-top-width: 80px;
+            }
+        }
+        
+        /* Envelope aberto - aba levantada */
+        .envelope-wrapper.open .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 5;
+        }
+        
+        /* CARTA - DENTRO DO ENVELOPE (atrás da aba) */
+        .letter {
+            position: absolute;
+            bottom: 10px;
+            left: 5%;
+            width: 90%;
+            background: #fffdfa;
+            color: #1f2937;
+            padding: 18px;
+            border-radius: 12px;
+            z-index: 20;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            max-height: 160px;
+            overflow-y: auto;
+            transition: transform 0.5s ease 0.2s;
+            transform: translateY(0);
+        }
+        
+        /* Quando abre, a carta sobe para fora */
+        .envelope-wrapper.open .letter {
+            transform: translateY(-140px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+        
+        .letter::-webkit-scrollbar {
+            width: 4px;
+        }
+        .letter::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .letter::-webkit-scrollbar-thumb {
+            background: #e11d48;
+            border-radius: 10px;
+        }
+        
+        /* Selo do coração */
+        .envelope-seal {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            background: #881337;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 25;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 2px solid #f43f5e;
+            pointer-events: none;
+        }
+        
+        .tab-content{display:none}
+        .tab-content.active{display:block;animation:fadeIn .6s}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        
+        .floating-emoji{cursor:pointer;position:absolute;animation:floatUp 3.5s linear forwards}
+        @keyframes floatUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-290px);opacity:0}}
+        .love-quote{border-left:3px solid #e11d48;transition:.3s}
+        .love-quote:hover{border-left-width:5px;background:rgba(225,29,72,0.1)}
+        ::-webkit-scrollbar{width:8px}
+        ::-webkit-scrollbar-track{background:#120007}
+        ::-webkit-scrollbar-thumb{background:#e11d48;border-radius:9999px}
+        audio{display:none}
+    </style>
+</head>
+<body>
+
+<audio id="loveSong" loop preload="auto">
+    <source src="https://cdn.pixabay.com/download/audio/2022/12/13/audio_bfe3b5a5d1.mp3?filename=lofi-chill-149234.mp3" type="audio/mpeg">
+</audio>
+
+<canvas id="bgCanvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-0"></canvas>
+<div id="toast" class="fixed top-4 right-4 z-50"></div>
+
+<div class="relative z-10 min-h-screen flex flex-col">
+    <header class="w-full px-4 py-4 flex flex-wrap justify-between items-center border-b border-rose-950/40 bg-black/30 backdrop-blur-md">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-heart text-rose-500 text-2xl animate-pulse"></i>
+            <span class="font-serif text-xl font-bold neon-glow">Kauan & Yanne ❤️</span>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="openModal('config')" class="px-3 py-1.5 rounded-full bg-rose-900/60 border border-rose-500 text-xs font-semibold flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Personalizar</button>
+            <button onclick="toggleMusic()" id="musicBtn" class="px-3 py-1.5 rounded-full bg-pink-950/50 border border-pink-700/30 text-sm flex items-center gap-2"><i id="musicIcon" class="fa-solid fa-circle-play text-rose-400"></i> <span id="musicText">Tocar Música</span></button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 flex flex-col items-center gap-10">
+        <div class="text-center">
+            <div class="inline-block px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 text-xs mb-2 animate-pulse">❤️ 14 DIAS DE AMOR ❤️</div>
+            <h1 class="font-serif text-5xl md:text-7xl font-black bg-gradient-to-r from-rose-200 to-rose-400 bg-clip-text text-transparent">Kauan <span class="text-rose-500">&amp;</span> Yanne</h1>
+            <p class="text-rose-200/80 italic mt-2">"14 dias e já sei que você é o amor da minha vida" 🎵</p>
+        </div>
+
+        <div class="w-full max-w-4xl bg-rose-950/30 backdrop-blur-md p-6 rounded-3xl border border-rose-800/30">
+            <h3 class="text-center font-serif text-xl text-rose-200 mb-4">💕 14 DIAS DO INÍCIO DA NOSSA HISTÓRIA 💕</h3>
+            <div class="grid grid-cols-4 gap-4 text-center">
+                <div class="bg-rose-950/40 p-3 rounded-2xl"><span id="days" class="block text-5xl font-bold text-rose-400">14</span><span class="text-xs">Dias</span></div>
+                <div class="bg-rose-950/40 p-3 rounded-2xl"><span id="hours" class="block text-5xl font-bold text-pink-400">0</span><span class="text-xs">Horas</span></div>
+                <div class="bg-rose-950/40 p-3 rounded-2xl"><span id="mins" class="block text-5xl font-bold text-rose-400">0</span><span class="text-xs">Minutos</span></div>
+                <div class="bg-rose-950/40 p-3 rounded-2xl"><span id="secs" class="block text-5xl font-bold text-pink-400">0</span><span class="text-xs">Segundos</span></div>
+            </div>
+            <p class="text-center text-rose-300/60 text-xs mt-3">Juntos desde <span class="text-rose-400 font-semibold text-base">29 de maio de 2026</span> 💕</p>
+            <p class="text-center text-rose-400 text-sm mt-2 font-semibold animate-pulse">✨ 14 DIAS MAIS FELIZES DA MINHA VIDA! ✨</p>
+        </div>
+
+        <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="love-quote bg-rose-950/20 p-3 rounded-xl"><i class="fa-solid fa-quote-left text-rose-400 text-sm mr-2"></i><span class="text-sm italic">"Yanne, em 14 dias você já virou meu mundo inteiro."</span></div>
+            <div class="love-quote bg-rose-950/20 p-3 rounded-xl"><i class="fa-solid fa-quote-left text-rose-400 text-sm mr-2"></i><span class="text-sm italic">"Kauan, 14 dias e eu já não consigo imaginar minha vida sem você."</span></div>
+            <div class="love-quote bg-rose-950/20 p-3 rounded-xl"><i class="fa-solid fa-quote-left text-rose-400 text-sm mr-2"></i><span class="text-sm italic">"29/05 foi o dia mais especial da minha vida."</span></div>
+            <div class="love-quote bg-rose-950/20 p-3 rounded-xl"><i class="fa-solid fa-quote-left text-rose-400 text-sm mr-2"></i><span class="text-sm italic">"14 dias que parecem uma vida inteira de amor."</span></div>
+        </div>
+
+        <div class="flex gap-4 border-b border-rose-900/30">
+            <button onclick="switchTab('carta')" id="btnCarta" class="px-4 py-2 text-sm font-medium border-b-2 border-rose-500 text-rose-200">💌 Carta</button>
+            <button onclick="switchTab('historia')" id="btnHistoria" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-rose-300/60">✨ História</button>
+            <button onclick="switchTab('jogos')" id="btnJogos" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-rose-300/60">🎮 Jogos</button>
+        </div>
+
+        <!-- TAB CARTA - ENVELOPE FUNCIONANDO CORRETAMENTE -->
+        <div id="tabCarta" class="tab-content active flex flex-col items-center">
+            <p class="text-center text-rose-200/70 mb-4 text-sm">💖 Clique no envelope para abrir a carta 💖</p>
+            
+            <div class="envelope-wrapper" id="envelopeWrapper" onclick="toggleEnvelope()">
+                <!-- Parte de baixo do envelope -->
+                <div class="envelope-bottom"></div>
+                
+                <!-- Aba do envelope -->
+                <div class="envelope-flap"></div>
+                
+                <!-- CARTA (dentro do envelope) -->
+                <div class="letter" id="letter">
+                    <h4 id="letterTitle" class="font-serif font-bold text-rose-800 text-base mb-2">Minha querida Yanne,</h4>
+                    <p id="letterBody" class="text-xs text-gray-700 leading-relaxed">Faz apenas 14 dias que a gente começou essa história, mas parece que eu te conheço há uma vida inteira. Cada dia ao seu lado tem sido especial, cada mensagem sua aquece meu coração. Você chegou e em 14 dias já mudou tudo. Mal posso esperar para viver os próximos 14 anos, 14 décadas ao seu lado. Te amo, Yanne! 💖</p>
+                    <div class="text-right mt-3 pt-2 border-t border-rose-100">
+                        <span id="letterSign" class="font-serif text-xs font-bold text-rose-800">Com amor, Kauan ❤️</span>
+                    </div>
+                </div>
+                
+                <!-- Selo do coração -->
+                <div class="envelope-seal">
+                    <i class="fa-solid fa-heart text-rose-500 text-2xl animate-pulse"></i>
+                </div>
+            </div>
+            
+            <p id="envelopeHint" class="text-xs text-rose-400/70 mt-3 italic">✨ Clique no envelope para abrir e ler a carta ✨</p>
+            <button onclick="openModal('letter')" class="mt-3 px-4 py-2 bg-rose-950/40 rounded-xl text-xs flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Escrever Minha Carta</button>
+        </div>
+
+        <div id="tabHistoria" class="tab-content max-w-3xl">
+            <div class="text-center mb-6"><h3 class="font-serif text-2xl text-rose-200">Kauan & Yanne - Nossa História</h3><p class="text-rose-300/60 text-sm">14 dias de pura magia 💫</p></div>
+            <div class="relative border-l-2 border-rose-800/40 ml-4 space-y-8" id="timeline">
+                <div class="relative"><span class="absolute -left-2 w-4 h-4 rounded-full bg-rose-500"></span><div class="ml-6 bg-rose-950/30 p-4 rounded-xl"><h4 class="font-serif font-semibold">29 de Maio de 2026 - O Começo 💕</h4><p class="text-sm text-rose-300/70">O dia que tudo começou. 14 dias atrás, nossas vidas se encontraram e mudaram para sempre.</p></div></div>
+                <div class="relative"><span class="absolute -left-2 w-4 h-4 rounded-full bg-pink-500"></span><div class="ml-6 bg-rose-950/30 p-4 rounded-xl"><h4 class="font-serif font-semibold">14 Dias de Amor</h4><p class="text-sm text-rose-300/70">Cada olhar, cada risada, cada mensagem - construindo algo que vai durar para sempre.</p></div></div>
+            </div>
+            <button onclick="openModal('moment')" class="mt-4 px-4 py-2 bg-pink-900/40 rounded-xl text-sm flex items-center gap-2 mx-auto"><i class="fa-solid fa-plus-circle"></i> Adicionar Momento</button>
+        </div>
+
+        <div id="tabJogos" class="tab-content w-full">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-rose-950/20 p-6 rounded-3xl text-center"><i class="fa-solid fa-heart text-4xl text-rose-400 mb-3"></i><h3 class="font-serif text-xl font-bold">Motivos para Te Amar</h3><div id="reasonDisplay" class="min-h-[100px] bg-black/40 rounded-2xl p-4 my-4 text-sm italic">"Em 14 dias você já conquistou tudo em mim"</div><button onclick="newReason()" class="px-5 py-2 bg-rose-600 rounded-full text-sm"><i class="fa-solid fa-heart"></i> Outro Motivo</button></div>
+                <div class="bg-pink-950/20 p-6 rounded-3xl text-center"><i class="fa-solid fa-puzzle-piece text-4xl text-pink-400 mb-3"></i><h3 class="font-serif text-xl font-bold">Jogo da Memória</h3><div id="memoryBoard" class="grid grid-cols-4 gap-2 max-w-[280px] mx-auto my-4"></div><div class="flex justify-between"><span id="memoryMoves">Movimentos: 0</span><button onclick="initMemory()" class="px-3 py-1 bg-pink-900/60 rounded-lg text-xs"><i class="fa-solid fa-rotate-right"></i> Reiniciar</button></div></div>
+            </div>
+            <div class="mt-6 bg-rose-950/20 p-6 rounded-3xl text-center"><i class="fa-solid fa-cloud-rain text-4xl text-rose-400 mb-3"></i><h3 class="font-serif text-xl font-bold">Chuva de Emojis</h3><div id="gameArea" class="relative bg-black/40 rounded-2xl h-48 overflow-hidden"><div id="startScreen" class="flex flex-col items-center justify-center h-full"><span class="text-3xl">🎈💖✨</span><button onclick="startGame()" class="mt-3 px-5 py-2 bg-rose-600 rounded-xl text-sm">Iniciar</button></div><div id="gameScreen" class="hidden relative h-full"><div class="absolute top-2 left-2 flex justify-between w-[calc(100%-16px)]"><span>Score: <span id="score">0</span></span><span id="lives"></span></div><div id="emojiArea" class="h-full relative"></div></div><div id="gameOverScreen" class="hidden flex-col items-center justify-center h-full"><p>Fim de jogo! Pontuação: <span id="finalScore">0</span></p><button onclick="startGame()" class="mt-2 px-4 py-1 bg-rose-700 rounded-lg text-sm">Jogar Novamente</button></div></div></div>
+        </div>
+    </main>
+
+    <footer class="text-center py-6 text-xs text-rose-300/40 border-t border-rose-950/30">Feito com <i class="fa-solid fa-heart text-rose-500 animate-pulse"></i> para Kauan & Yanne - 14 dias de muito amor! 💑</footer>
+</div>
+
+<script>
+    let musicPlaying = false;
+    const audio = document.getElementById('loveSong');
+    
+    function toggleMusic() {
+        if (!musicPlaying) {
+            audio.play();
+            musicPlaying = true;
+            document.getElementById('musicIcon').className = "fa-solid fa-circle-pause text-rose-400";
+            document.getElementById('musicText').innerText = "⏸️ Pausar";
+            showToast("🎵 Tocando música romântica 🎵");
+        } else {
+            audio.pause();
+            musicPlaying = false;
+            document.getElementById('musicIcon').className = "fa-solid fa-circle-play text-rose-400";
+            document.getElementById('musicText').innerText = "🎵 Tocar Música";
+        }
+    }
+
+    let love = { 
+        partnerOne: "Kauan", 
+        partnerTwo: "Yanne", 
+        anniversary: "2026-05-29",
+        letterTitle: "Minha querida Yanne,", 
+        letterBody: "Faz apenas 14 dias que a gente começou essa história, mas parece que eu te conheço há uma vida inteira. Cada dia ao seu lado tem sido especial, cada mensagem sua aquece meu coração. Você chegou e em 14 dias já mudou tudo. Mal posso esperar para viver os próximos 14 anos, 14 décadas ao seu lado. Te amo, Yanne! 💖", 
+        letterSign: "Com amor, Kauan ❤️", 
+        reasons: [
+            "Seu sorriso iluminou meus últimos 14 dias",
+            "Você me fez acreditar no amor em tão pouco tempo",
+            "Cada mensagem sua é o melhor momento do meu dia",
+            "Seu jeito único me conquistou completamente",
+            "14 dias e você já entende meus silêncios",
+            "Juntos somos mais fortes, mesmo em pouco tempo",
+            "Sua presença já é meu lugar favorito",
+            "Você me conhece como ninguém em 14 dias",
+            "Te amar é a melhor coisa que me aconteceu"
+        ] 
+    };
+
+    let envelopeOpen = false;
+    function toggleEnvelope() { 
+        const wrapper = document.getElementById('envelopeWrapper');
+        const hint = document.getElementById('envelopeHint');
+        
+        envelopeOpen = !envelopeOpen; 
+        if (envelopeOpen) {
+            wrapper.classList.add('open');
+            hint.innerHTML = "✨ Clique para fechar o envelope ✨";
+            showToast("💌 Carta aberta! Leia com o coração 💌");
+        } else {
+            wrapper.classList.remove('open');
+            hint.innerHTML = "✨ Clique no envelope para abrir e ler a carta ✨";
+        }
+    }
+
+    function switchTab(tab) {
+        ['carta','historia','jogos'].forEach(t => { document.getElementById(`tab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.remove('active'); });
+        document.getElementById(`tab${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('active');
+        ['Carta','Historia','Jogos'].forEach(b => { document.getElementById(`btn${b}`).classList.remove('border-rose-500','text-rose-200'); document.getElementById(`btn${b}`).classList.add('border-transparent','text-rose-300/60'); });
+        document.getElementById(`btn${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.remove('border-transparent','text-rose-300/60');
+        document.getElementById(`btn${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('border-rose-500','text-rose-200');
+        if(tab === 'jogos' && document.getElementById('memoryBoard').children.length === 0) initMemory();
+    }
+
+    function updateCounter() {
+        const startDate = new Date(2026, 4, 29);
+        const today = new Date();
+        let diffDays = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        if (diffDays > 14) diffDays = 14;
+        if (diffDays < 0) diffDays = 0;
+        document.getElementById('days').innerText = diffDays;
+        document.getElementById('hours').innerText = today.getHours();
+        document.getElementById('mins').innerText = today.getMinutes().toString().padStart(2,'0');
+        document.getElementById('secs').innerText = today.getSeconds().toString().padStart(2,'0');
+    }
+    setInterval(updateCounter, 1000);
+    updateCounter();
+
+    let lastIdx = -1;
+    function newReason() {
+        let idx = Math.floor(Math.random() * love.reasons.length);
+        while(idx === lastIdx && love.reasons.length>1) idx = Math.floor(Math.random() * love.reasons.length);
+        lastIdx = idx;
+        document.getElementById('reasonDisplay').innerHTML = `"${love.reasons[idx]}"`;
+        showToast("💕 Um novo motivo para amar!");
+    }
+
+    let matched=0, moves=0, lock=false;
+    const memoryIcons = ['fa-heart','fa-envelope','fa-gift','fa-camera','fa-star','fa-champagne-glasses'];
+    function initMemory() {
+        const board = document.getElementById('memoryBoard');
+        board.innerHTML = '';
+        let flipped = []; matched=0; moves=0; lock=false;
+        document.getElementById('memoryMoves').innerText = `Movimentos: 0`;
+        let items = [...memoryIcons, ...memoryIcons];
+        items.sort(() => Math.random() - 0.5);
+        items.forEach((icon, i) => {
+            const card = document.createElement('div');
+            card.className = "h-16 bg-pink-900/40 rounded-xl cursor-pointer flex items-center justify-center text-2xl transition";
+            card.dataset.icon = icon;
+            card.innerHTML = `<i class="fa-regular ${icon} opacity-0"></i>`;
+            card.onclick = () => flipCard(card, flipped);
+            board.appendChild(card);
+        });
+    }
+    function flipCard(card, flipped) {
+        if(lock || card.classList.contains('matched')) return;
+        if(flipped.length===1 && flipped[0] === card) return;
+        card.classList.add('bg-rose-500/30');
+        card.querySelector('i').classList.remove('fa-regular','opacity-0');
+        card.querySelector('i').classList.add('fa-solid');
+        flipped.push(card);
+        if(flipped.length===2){ moves++; document.getElementById('memoryMoves').innerText = `Movimentos: ${moves}`; checkMatch(flipped); }
+    }
+    function checkMatch(flipped) {
+        lock = true;
+        const [c1,c2] = flipped;
+        if(c1.dataset.icon === c2.dataset.icon){
+            c1.classList.add('matched','bg-rose-500/50');
+            c2.classList.add('matched','bg-rose-500/50');
+            matched++;
+            flipped.length = 0;
+            lock = false;
+            if(matched === memoryIcons.length) showToast("🏆 Parabéns! Memória completa!");
+        } else {
+            setTimeout(() => {
+                c1.classList.remove('bg-rose-500/30'); c1.querySelector('i').classList.remove('fa-solid'); c1.querySelector('i').classList.add('fa-regular','opacity-0');
+                c2.classList.remove('bg-rose-500/30'); c2.querySelector('i').classList.remove('fa-solid'); c2.querySelector('i').classList.add('fa-regular','opacity-0');
+                flipped.length = 0; lock = false;
+            },1000);
+        }
+    }
+
+    let gameActive=false, gameScore=0, gameLives=3, gameInterval=null, highScore=localStorage.getItem('highScore')||0;
+    function startGame() {
+        if(gameInterval) clearInterval(gameInterval);
+        gameActive=true; gameScore=0; gameLives=3;
+        document.getElementById('score').innerText = gameScore;
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+        document.getElementById('gameOverScreen').classList.add('hidden');
+        document.getElementById('emojiArea').innerHTML = '';
+        updateLives();
+        gameInterval = setInterval(spawnEmoji, 800);
+    }
+    function updateLives() {
+        const livesDiv = document.getElementById('lives');
+        livesDiv.innerHTML = '';
+        for(let i=0;i<3;i++) livesDiv.innerHTML += i<gameLives ? '<i class="fa-solid fa-heart text-rose-500 text-xs"></i>' : '<i class="fa-regular fa-heart text-rose-700 text-xs"></i>';
+    }
+    function spawnEmoji() {
+        if(!gameActive) return;
+        const emojis = [{c:'❤️',t:'good'},{c:'💖',t:'good'},{c:'🌹',t:'good'},{c:'💌',t:'good'},{c:'💔',t:'bad'},{c:'🌧️',t:'bad'}];
+        const e = emojis[Math.floor(Math.random()*emojis.length)];
+        const div = document.createElement('div');
+        div.className = 'floating-emoji text-3xl';
+        div.style.left = Math.random() * (document.getElementById('emojiArea').clientWidth - 40) + 'px';
+        div.style.bottom = '0px';
+        div.innerText = e.c;
+        div.onclick = () => { if(gameActive){ if(e.t==='good'){ gameScore+=10; document.getElementById('score').innerText=gameScore; } else { gameLives--; updateLives(); if(gameLives<=0) endGame(); } div.remove(); } };
+        document.getElementById('emojiArea').appendChild(div);
+        setTimeout(() => { if(div.parentNode) div.remove(); }, 3500);
+    }
+    function endGame() {
+        gameActive=false; clearInterval(gameInterval);
+        document.getElementById('gameScreen').classList.add('hidden');
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+        document.getElementById('finalScore').innerText = gameScore;
+        if(gameScore > highScore){ highScore = gameScore; localStorage.setItem('highScore',highScore); showToast("🏆 Novo recorde!"); }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerHTML = `<div class="bg-rose-900/90 backdrop-blur rounded-xl px-4 py-2 text-sm shadow-lg animate-pulse">${msg}</div>`;
+        setTimeout(() => t.innerHTML = '', 3000);
+    }
+
+    function openModal(type) {
+        if(type==='config') document.getElementById('configModal').classList.remove('hidden');
+        if(type==='letter'){ document.getElementById('letterTitleInput').value = love.letterTitle; document.getElementById('letterBodyInput').value = love.letterBody; document.getElementById('letterSignInput').value = love.letterSign; document.getElementById('letterModal').classList.remove('hidden'); }
+        if(type==='moment') document.getElementById('momentModal').classList.remove('hidden');
+    }
+    function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+    function saveConfig(){
+        love.partnerOne = document.getElementById('p1').value;
+        love.partnerTwo = document.getElementById('p2').value;
+        love.anniversary = document.getElementById('date').value;
+        localStorage.setItem('loveData', JSON.stringify(love));
+        location.reload();
+    }
+    function saveLetter(){
+        love.letterTitle = document.getElementById('letterTitleInput').value;
+        love.letterBody = document.getElementById('letterBodyInput').value;
+        love.letterSign = document.getElementById('letterSignInput').value;
+        document.getElementById('letterTitle').innerText = love.letterTitle;
+        document.getElementById('letterBody').innerText = love.letterBody;
+        document.getElementById('letterSign').innerText = love.letterSign;
+        closeModal('letterModal');
+        showToast("💌 Carta atualizada!");
+    }
+    function saveMoment(){
+        const title = document.getElementById('momentTitle').value;
+        const desc = document.getElementById('momentDesc').value;
+        if(title && desc){
+            const timeline = document.getElementById('timeline');
+            const div = document.createElement('div');
+            div.className = 'relative';
+            div.innerHTML = `<span class="absolute -left-2 w-4 h-4 rounded-full bg-pink-500"></span><div class="ml-6 bg-rose-950/30 p-4 rounded-xl"><h4 class="font-serif font-semibold">${title}</h4><p class="text-sm text-rose-300/70">${desc}</p></div>`;
+            timeline.appendChild(div);
+            closeModal('momentModal');
+            showToast("✨ Momento adicionado!");
+        }
+    }
+
+    const canvas = document.getElementById('bgCanvas'), ctx = canvas.getContext('2d');
+    let particles = [];
+    function resizeCanvas(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+    window.addEventListener('resize',resizeCanvas); resizeCanvas();
+    class HeartParticle{ constructor(){ this.reset(); } reset(){ this.x=Math.random()*canvas.width; this.y=canvas.height+Math.random()*100; this.size=Math.random()*10+5; this.speed=-(Math.random()*1+0.5); this.opacity=Math.random()*0.5+0.2; } update(){ this.y+=this.speed; if(this.y<-20) this.reset(); } draw(){ ctx.globalAlpha=this.opacity; ctx.fillStyle='#e11d48'; ctx.beginPath(); const x=this.x, y=this.y, s=this.size; ctx.moveTo(x,y+s/4); ctx.quadraticCurveTo(x,y,x+s/2,y); ctx.quadraticCurveTo(x+s,y,x+s,y+s/3); ctx.quadraticCurveTo(x+s,y+s*2/3,x+s/2,y+s); ctx.quadraticCurveTo(x,y+s*2/3,x,y+s/3); ctx.fill(); } }
+    for(let i=0;i<50;i++) particles.push(new HeartParticle());
+    function animateBg(){ ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{ p.update(); p.draw(); }); requestAnimationFrame(animateBg); }
+    animateBg();
+
+    const saved = localStorage.getItem('loveData');
+    if(saved) Object.assign(love, JSON.parse(saved));
+    document.getElementById('letterTitle').innerText = love.letterTitle;
+    document.getElementById('letterBody').innerText = love.letterBody;
+    document.getElementById('letterSign').innerText = love.letterSign;
+    updateCounter();
+</script>
+
+<div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur hidden items-center justify-center z-50"><div class="bg-neutral-900 p-6 rounded-2xl w-80"><h3 class="font-serif text-xl mb-4">Personalizar</h3><input id="p1" placeholder="Seu nome" class="w-full bg-neutral-800 rounded-lg p-2 mb-2" value="Kauan"><input id="p2" placeholder="Amor" class="w-full bg-neutral-800 rounded-lg p-2 mb-2" value="Yanne"><input id="date" type="date" class="w-full bg-neutral-800 rounded-lg p-2 mb-4" value="2026-05-29"><button onclick="saveConfig()" class="w-full bg-rose-600 py-2 rounded-xl">Salvar</button><button onclick="closeModal('configModal')" class="w-full mt-2 text-rose-400 text-sm">Cancelar</button></div></div>
+<div id="letterModal" class="fixed inset-0 bg-black/80 backdrop-blur hidden items-center justify-center z-50"><div class="bg-neutral-900 p-6 rounded-2xl w-96"><h3 class="font-serif text-xl mb-4">Sua Carta</h3><input id="letterTitleInput" placeholder="Saudação" class="w-full bg-neutral-800 rounded-lg p-2 mb-2"><textarea id="letterBodyInput" rows="4" placeholder="Mensagem" class="w-full bg-neutral-800 rounded-lg p-2 mb-2"></textarea><input id="letterSignInput" placeholder="Assinatura" class="w-full bg-neutral-800 rounded-lg p-2 mb-4"><button onclick="saveLetter()" class="w-full bg-rose-600 py-2 rounded-xl">Salvar Carta</button><button onclick="closeModal('letterModal')" class="w-full mt-2 text-rose-400 text-sm">Cancelar</button></div></div>
+<div id="momentModal" class="fixed inset-0 bg-black/80 backdrop-blur hidden items-center justify-center z-50"><div class="bg-neutral-900 p-6 rounded-2xl w-80"><h3 class="font-serif text-xl mb-4">Novo Momento</h3><input id="momentTitle" placeholder="Título" class="w-full bg-neutral-800 rounded-lg p-2 mb-2"><textarea id="momentDesc" rows="3" placeholder="Descrição" class="w-full bg-neutral-800 rounded-lg p-2 mb-4"></textarea><button onclick="saveMoment()" class="w-full bg-rose-600 py-2 rounded-xl">Adicionar</button><button onclick="closeModal('momentModal')" class="w-full mt-2 text-rose-400 text-sm">Cancelar</button></div></div>
+</body>
+</html>
